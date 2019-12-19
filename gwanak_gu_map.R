@@ -211,6 +211,69 @@ ggplot(data = new_gwanakDf3,
   scale_fill_gradient(low = "white", high = "red")
 
 
+###############################
+# 서울특별시_관악구_CCTV .csv 동
+
+library(stringr)
+
+zipcode_rd = read.table(file = './input_data/서울특별시_zipcode.txt', 
+                        sep = "|",
+                        stringsAsFactors = F,
+                        header = T,
+                        colClasses = "character"
+                        )
+
+cctv_gwanak = read.csv(file = './input_data/서울특별시_관악구_CCTV_20191031.csv', stringsAsFactors = F)
+
+zipcode_dong = read.table(file = './input_data/부가정보_서울특별시.txt',
+                          sep = "|",
+                          stringsAsFactors = F,
+                          fill = T,
+                          colClasses = "character")
+
+new_zipcode_rd <- zipcode_rd %>% filter(시군구 == "관악구")
+
+# 아 정규식 표현 짜증나
+cctv_gwanak["소재지도로명주소"] = lapply(cctv_gwanak["소재지도로명주소"], gsub, pattern = "서울특별시 관악구 ", replacement = "", fixed = T)
+
+cctv_gwanak["소재지도로명주소"] = lapply(cctv_gwanak["소재지도로명주소"], gsub, pattern = " .*$", replacement = "")
+
+small_cctv_gwanak <- cctv_gwanak %>% select("관리기관명", "소재지도로명주소", "설치목적구분", "카메라대수")
+
+a_new_zipcode_rd <- new_zipcode_rd %>% select("도로명", "우편번호") %>% unique()
+
+# a_new_zipcode_rd <- a_new_zipcode_rd[order(a_new_zipcode_rd[, '도로명'], -a_new_zipcode_rd[,'우편번호']), ]
+
+a_new_zipcode_rd_test <- a_new_zipcode_rd[!duplicated(a_new_zipcode_rd["도로명"]),]
+
+
+# new_zipcode_rd %>% select("도로명", "우편번호", "행정동명") %>% unique()
+
+merged_df = left_join(small_cctv_gwanak, a_new_zipcode_rd_test, by = c("소재지도로명주소" = "도로명"))
+
+# ㅇㅁㄹㅇㅁㄴㅇㄹㄴㅁ
+b_new_zipcode_rd <- new_zipcode_rd %>% select("도로명", "행정동명")
+
+# 복제 부분 없애기
+b_new_zipcode_rd <- b_new_zipcode_rd[!duplicated(b_new_zipcode_rd["도로명"]),]
+
+#new_zipcode_dong <- zipcode_dong %>% select("V3", "V4") %>% unique()
+
+new_merged_df <- left_join(merged_df, b_new_zipcode_rd, by = c("소재지도로명주소" = "도로명"))
+
+# merged_df <- merge(cctv_gwanak, a_new_zipcode_rd, by.x = "소재지도로명주소", by.y = "도로명")
+
+#inner_join()
+
+new_merged_df %>% filter(행정동명 == "")
+str(new_merged_df %>% filter(is.na(행정동명)))
+
+write.csv(new_merged_df, file = './output_data/cctv_dong.csv')
+
+
+str_remove(cctv_gwanak["소재지도로명주소"], "서울특별시 관악구 ")
+
+str_extract("", "([^\s]+)") cctv_gwanak["소재지도로명주소"]
 
 
 
