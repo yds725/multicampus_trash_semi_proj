@@ -9,4 +9,8 @@ https://mrkevinna.github.io/
 https://mrkevinna.github.io/R-%EC%A7%80%EB%8F%84-%EC%8B%9C%EA%B0%81%ED%99%94-2/
 
 
+데이터 두개
+http://www.juso.go.kr/addrlink/addressBuildDevNew.do?menu=match 전체 자료 다운받아라
+https://www.epost.go.kr/search/zipcode/areacdAddressDown.jsp 제일 첫번쨰 꺼 
+
 
