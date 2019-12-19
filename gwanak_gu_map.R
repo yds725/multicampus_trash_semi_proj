@@ -1,3 +1,9 @@
+install.packages("ggplot2")
+install.packages("rgdal")
+install.packages("xlsx")
+install.packages("dplyr")
+install.packages("devtools")
+
 # library(ggmap)
 library(ggplot2)
 # library(raster)
@@ -6,7 +12,7 @@ library(ggplot2)
 library(rgdal)
 
 library(xlsx)
-library(ggplot2)
+#library(ggplot2)
 library(dplyr)
 library(rlang)
 library(reshape2)
@@ -236,7 +242,9 @@ new_zipcode_rd <- zipcode_rd %>% filter(시군구 == "관악구")
 # 아 정규식 표현 짜증나
 cctv_gwanak["소재지도로명주소"] = lapply(cctv_gwanak["소재지도로명주소"], gsub, pattern = "서울특별시 관악구 ", replacement = "", fixed = T)
 
-cctv_gwanak["소재지도로명주소"] = lapply(cctv_gwanak["소재지도로명주소"], gsub, pattern = " .*$", replacement = "")
+cctv_gwanak["소재지도로명주소"] = lapply(cctv_gwanak["소재지도로명주소"], gsub, pattern = "(길).*", replacement = "\\1")
+
+# \b\w*동\b
 
 small_cctv_gwanak <- cctv_gwanak %>% select("관리기관명", "소재지도로명주소", "설치목적구분", "카메라대수")
 
