@@ -72,6 +72,8 @@ new_c_df <- new_c_df %>% mutate(SUMS = 단독주택 + 연립주택 + 다세대�
 
 new_c_df["RATIO"] = lapply(new_c_df["RATIO"], round, 3) 
 
+
+#########################
 ## 동별 지도를 그려보자?
 
 # 한국행정지도 shape파일ㅇㄹ 
