@@ -41,9 +41,18 @@ cctv_complete = read.xlsx("./input_data/cctv_complete.xlsx", sheetIndex = 1, enc
 
 a_cctv_complete = cctv_complete %>% filter(cctv_complete["행정동명"] != "오류")
 
-
 cctv_numbers <- a_cctv_complete %>% group_by(행정동명) %>% summarise("카메라개수합계" = sum(카메라대수))
 
 h_df = inner_join(cctv_numbers, result, by = c("행정동명" = "동"))
 
 cor(h_df["카메라개수합계"], h_df["1인가구 비중"])
+
+###################
+## 1인가구 비중 && 주택 거처별 상관관계계
+
+cor(new_c_df2["RATIO"], result["1인가구 비중"])
+
+#View(new_c_df2)
+#View(result)
+
+
