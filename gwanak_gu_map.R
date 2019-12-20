@@ -22,14 +22,18 @@ library(devtools)
 
 c_df = read.xlsx("./input_data/주택종류별 주택(동별).xls", sheetIndex = 1, encoding = "UTF-8", stringsAsFactors = F)
 
+# 헤더 컬럼네임에 올려주기
 colnames(c_df) <- c_df[2,]
 c_df <- c_df[c(-1,-2),]
 
 c_df <- rename(c_df,  "주택(계)" = "계")
 
+# 
 new_c_df <- c_df %>% filter(자치구 == "관악구") %>% select("자치구", "동", "합계",  "단독주택", "연립주택", "다세대주택", "비거주용건물내주택")
 
+# 숫자로 바꾸기
 cols.num <- c("합계",  "단독주택", "연립주택", "다세대주택", "비거주용건물내주택")
+
 
 new_c_df[cols.num] <- sapply(new_c_df[cols.num], as.numeric)
 
@@ -37,7 +41,7 @@ new_c_df[cols.num] <- sapply(new_c_df[cols.num], as.numeric)
 
 #new_c_df[c("합계",  "단독주택", "연립주택", "다세대주택", "비거주용건물내주택")] <- as.numeric(new_c_df[c("합계",  "단독주택", "연립주택", "다세대주택", "비거주용건물내주택")])
 
-
+# 라티오 단독주택
 new_c_df <- new_c_df %>% mutate(SUMS = 단독주택 + 연립주택 + 다세대주택 +비거주용건물내주택) %>% mutate(RATIO = SUMS / 합계)
 
 new_c_df["RATIO"] = lapply(new_c_df["RATIO"], round, 3) 
@@ -105,17 +109,17 @@ my_theme <- theme(panel.background = element_blank(),
                   plot.title = element_text(hjust = 0.5,
                                             face = 'bold'))
 
-# 지도 그리기
-gwanakMap <- ggplot(data = new_gwanakDf,
-                  mapping = aes(x = long, 
-                                y = lat,
-                                group = group
-                  )) + 
-  geom_polygon(fill = 'white',
-               color = 'black') +
-  my_theme
-
-gwanakMap
+# 지도 틀만 그리기
+# gwanakMap <- ggplot(data = new_gwanakDf,
+#                   mapping = aes(x = long, 
+#                                 y = lat,
+#                                 group = group
+#                   )) + 
+#   geom_polygon(fill = 'white',
+#                color = 'black') +
+#   my_theme
+# 
+# gwanakMap
 
 new_gwanakDf2 <- new_gwanakDf
 # all(is.na(new_gwanakDf$id))
@@ -151,17 +155,19 @@ changedCoords <- convertCoords(lon = new_gwanakDf2$long, lat = new_gwanakDf2$lat
 
 new_gwanakDf2 <- cbind(new_gwanakDf2, changedCoords)
 
-gwanakMap <- ggplot(data = new_gwanakDf2,
-                  mapping = aes(x = lonWGS84, 
-                                y = latWGS84,
-                                group = group
-                  )) + 
-  geom_polygon(fill = 'white',
-               color = 'black') +
-  my_theme +
-  coord_map()
 
-gwanakMap
+# 다른 좌표 기준ㅇ로 만든거?
+# gwanakMap <- ggplot(data = new_gwanakDf2,
+#                   mapping = aes(x = lonWGS84, 
+#                                 y = latWGS84,
+#                                 group = group
+#                   )) + 
+#   geom_polygon(fill = 'white',
+#                color = 'black') +
+#   my_theme +
+#   coord_map()
+# 
+# gwanakMap
 
 # 선거결과 지역명과 경계데이터 areaNm이 서로 같은지 확인합니다.
 intersect(x = new_c_df2$dongNm, y = new_gwanakDf2$dongNm %>% unique() %>% sort()) %>% length()
@@ -191,7 +197,7 @@ my_theme <-
 #   my_theme +
 #   coord_fixed()
 
-gwanakMap
+# gwanakMap
 
 new_gwanakDf3 <- merge(x = new_gwanakDf2,
                        y = new_c_df2[,c(2,9)],
@@ -201,6 +207,31 @@ new_gwanakDf3 <- merge(x = new_gwanakDf2,
 
 # id와 order 기준으로 오름차순 정렬합니다. 이거 정렬 df 새로 만들거나 df를 변경할때마다 꼭 해주어야함
 new_gwanakDf3 <- new_gwanakDf3[order(new_gwanakDf3$id, new_gwanakDf3$order), ]
+
+# 구 이름 표기 -> 동별 위도 경도 평균으로 이름
+
+center_long <- new_gwanakDf3 %>% group_by(dongNm) %>% 
+  summarise(center_long = mean(long)) %>% 
+  as.data.frame()
+
+center_long
+
+center_lat <- new_gwanakDf3 %>% group_by(dongNm) %>% 
+  summarise(center_lat = mean(lat)) %>% 
+  as.data.frame()
+
+center_lat
+
+dong_center_polygon <- merge(center_long, center_lat,
+                             by = "dongNm")
+
+dong_center_polygon
+
+naming_gwanakDf <- merge(new_gwanakDf3, dong_center_polygon,
+                         by = "dongNm")
+
+str(naming_gwanakDf)
+
 
 # new_gwanakDf[is.na(new_gwanakDf$id),]
 library(RColorBrewer)
@@ -214,17 +245,22 @@ ggplot(data = new_gwanakDf3,
        )) + 
   geom_polygon(mapping = aes(fill = RATIO, group = dongNm),
                color = 'black') +
-  ggtitle(label = "관악구 동별 지도") +
+  ggtitle(label = "관악구 동별 1인가구 거처 비중 분포도") +
   my_theme +
   coord_fixed() +
-  scale_fill_gradient(low = "white", high = "red")
+  scale_fill_gradient(low = "white", high = "red") +
+  # 동이름
+  geom_text(aes(x = naming_gwanakDf$center_long,
+                y = naming_gwanakDf$center_lat),
+            label = naming_gwanakDf$dongNm,
+            size = 3)
 
 
 ###############################
-# 서울특별시_관악구_CCTV .csv 동
+# 서울특별시_관악구_CCTV .csv  동별로 cctv 설치 개수를 구하자
 
 library(stringr)
-
+# 우편번호 데이터
 zipcode_rd = read.table(file = './input_data/서울특별시_zipcode.txt', 
                         sep = "|",
                         stringsAsFactors = F,
@@ -232,8 +268,10 @@ zipcode_rd = read.table(file = './input_data/서울특별시_zipcode.txt',
                         colClasses = "character"
                         )
 
+# cctv 관악 데이터
 cctv_gwanak = read.csv(file = './input_data/서울특별시_관악구_CCTV_20191031.csv', stringsAsFactors = F)
 
+# 우편번호 동 데이터터
 zipcode_dong = read.table(file = './input_data/부가정보_서울특별시.txt',
                           sep = "|",
                           stringsAsFactors = F,
@@ -247,11 +285,13 @@ cctv_gwanak["소재지도로명주소"] = lapply(cctv_gwanak["소재지도로명
 
 test_cctv_gwanak <- cctv_gwanak
 
+# 도로명문자열 처리를 해주자 
 test_cctv_gwanak["소재지도로명주소"] = lapply(test_cctv_gwanak["소재지도로명주소"], gsub, pattern = "(동|길).*", replacement = "\\1")
 
 test_cctv_gwanak["소재지도로명주소"] = lapply(test_cctv_gwanak["소재지도로명주소"], gsub, pattern = "\\s+", replacement = "")
 
 # \b\w*동\b
+
 
 small_cctv_gwanak <- test_cctv_gwanak %>% select("관리기관명", "소재지도로명주소", "설치목적구분", "카메라대수")
 
@@ -268,7 +308,7 @@ merged_df = left_join(small_cctv_gwanak, a_new_zipcode_rd_test, by = c("소재�
 
 bb_merged_df <- merged_df
 
-# 음...ㅇㄹㄴㅁㄹ
+# 결측값을 맞는 행정동으로 만들어주자
 bb_merged_df[,"행정동명"] <- ifelse(grepl("(동).*", bb_merged_df[,"소재지도로명주소"]), bb_merged_df[,"소재지도로명주소"], bb_merged_df[,"행정동명"] )
 # ㅇㅁㄹㅇㅁㄴㅇㄹㄴㅁ
 
@@ -297,22 +337,48 @@ twonine = "동광로49-31"
 eightnine = "동마길9"
 
 bb_merged_df[289, ]$소재지도로명주소 <- twonine
-bb_merged_df[889,]$소재지도로명주소 <- eightnine 
+bb_merged_df[889,]$소재지도로명주소 <- eightnine
 
+# 문자열 처리를 하고 최대한 행정동을 찾앗지만 아예 안나온느 부분은 수동으로 찾아야함
 write.csv(bb_merged_df, file = './output_data/cctv_dong.csv')
 
 
-### 정제된 cctv 동 파일을 하
+### 그렇게 수동으로 완벽히 바꾼걸 다시 읽어주고 동별 카메라 개수파악
 cctv_complete = read.xlsx("./input_data/cctv_complete.xlsx", sheetIndex = 1, encoding = "UTF-8", stringsAsFactors = F)
 
 a_cctv_complete = cctv_complete %>% filter(cctv_complete["행정동명"] != "오류")
 
 
-cctv_numbers <- a_cctv_complete %>% group_by(행정동명) %>% summarise("카메라 개수 합계" = sum(카메라대수))
+cctv_numbers <- a_cctv_complete %>% group_by(행정동명) %>% summarise("카메라개수합계" = sum(카메라대수))
 
-#str_remove(cctv_gwanak["소재지도로명주소"], "서울특별시 관악구 ")
+cctv_numbers 
 
-#str_extract("", "([^\s]+)") cctv_gwanak["소재지도로명주소"]
+new_gwanakDf3 <- merge(x = new_gwanakDf3,
+                       y = cctv_numbers[,c(1,2)],
+                       by.x = 'dongNm',
+                       by.y = '행정동명',
+                       all.x = T)
 
+# new_gwanakDf[is.na(new_gwanakDf$id),]
+library(RColorBrewer)
+
+myPal <- brewer.pal(n = 9, name = 'Reds')
+
+ggplot(data = new_gwanakDf3,
+       mapping = aes(x = long, 
+                     y = lat,
+                     group = group
+       )) + 
+  geom_polygon(mapping = aes(fill = 카메라개수합계, group = dongNm),
+               color = 'black') +
+  ggtitle(label = "관악구 동별 카메라 개수 분포도") +
+  my_theme +
+  coord_fixed() +
+  scale_fill_gradient(low = "white", high = "blue") +
+  # 동이름
+  geom_text(aes(x = naming_gwanakDf$center_long,
+                y = naming_gwanakDf$center_lat),
+            label = naming_gwanakDf$dongNm,
+            size = 3)
 
 
