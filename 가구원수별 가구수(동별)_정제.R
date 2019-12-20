@@ -1,13 +1,17 @@
-install.packages("xlsx")
+#install.packages("xlsx")
 library(xlsx)
 library(dplyr)
 library(reshape2)
-rm(list=ls()) 
+#rm(list=ls()) 
 
-d <- read.xlsx(file.choose(),
+d <- read.xlsx("./input_data/가구원수별 가구수(동별).xls",
                sheetIndex = 1,
                encoding = "UTF-8",
                stringsAsFactors = FALSE)
+
+# colnames(d) <- d[1,]
+
+# d <- d[-1,]
 
 d_li <- data.frame(d)
 d_li <- filter(d_li,
@@ -30,3 +34,16 @@ result <- mutate(tmp,
                "1인가구 비중" = (as.integer(일반가구.1)/가구수) * 100)
 result <- result[-1,]
 View(result)
+
+#################
+## 컴플리트 
+cctv_complete = read.xlsx("./input_data/cctv_complete.xlsx", sheetIndex = 1, encoding = "UTF-8", stringsAsFactors = F)
+
+a_cctv_complete = cctv_complete %>% filter(cctv_complete["행정동명"] != "오류")
+
+
+cctv_numbers <- a_cctv_complete %>% group_by(행정동명) %>% summarise("카메라개수합계" = sum(카메라대수))
+
+h_df = inner_join(cctv_numbers, result, by = c("행정동명" = "동"))
+
+cor(h_df["카메라개수합계"], h_df["1인가구 비중"])
