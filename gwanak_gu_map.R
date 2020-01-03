@@ -310,6 +310,8 @@ bb_merged_df <- merged_df
 
 # 결측값을 맞는 행정동으로 만들어주자
 bb_merged_df[,"행정동명"] <- ifelse(grepl("(동).*", bb_merged_df[,"소재지도로명주소"]), bb_merged_df[,"소재지도로명주소"], bb_merged_df[,"행정동명"] )
+
+#bb_merged_df %>% filter(행정동명 == "난곡동")
 # ㅇㅁㄹㅇㅁㄴㅇㄹㄴㅁ
 
 #bb_merged_df["행정동명"] = lapply(bb_merged_df["소재지도로명주소"], gsub, pattern = "\\s+", replacement = "")
